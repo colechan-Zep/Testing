@@ -1,80 +1,53 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Raw Camera Check</title>
-    <style>
-        body { 
-            background-color: #222; 
-            color: white; 
-            display: flex; 
-            flex-direction: column;
-            align-items: center; 
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            font-family: sans-serif;
-        }
-        /* 這是最原始的影片標籤，加了紅色框框 */
-        video { 
-            width: 90%; 
-            max-width: 400px; 
-            height: auto; 
-            border: 5px solid red; 
-            background-color: black; 
-        }
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
-            margin-bottom: 20px;
-            background-color: #07c160; /* 微信綠 */
-            color: white;
-            border: none;
-            border-radius: 5px;
-        }
-        #log { margin-top: 10px; color: yellow; font-size: 14px; text-align: center; }
-    </style>
-</head>
-<body>
-
-    <button onclick="openCamera()">點擊開啟相機 (Raw)</button>
-
-    <video id="myVideo" playsinline webkit-playsinline muted autoplay></video>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MindAR Demo</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
     
-    <div id="log">等待操作...</div>
+    <style>
+      body { margin: 0; overflow: hidden; }
+      /* 診斷層 */
+      #scanning-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        display: flex; justify-content: center; align-items: center;
+        pointer-events: none; z-index: 999;
+      }
+      .scan-line {
+        width: 200px; height: 200px;
+        border: 2px solid lime;
+        background: rgba(0, 255, 0, 0.1);
+      }
+      #msg {
+        position: fixed; top: 20px; left: 0; width: 100%;
+        text-align: center; color: white; font-size: 18px; 
+        text-shadow: 1px 1px 2px black; z-index: 1000;
+      }
+    </style>
+  </head>
+  <body>
+    
+    <div id="msg">MindAR 啟動中...<br>請掃描下圖</div>
+    <div id="scanning-overlay">
+      <div class="scan-line"></div>
+    </div>
 
-    <script>
-        function openCamera() {
-            var log = document.getElementById('log');
-            var video = document.getElementById('myVideo');
-            
-            log.innerHTML = "正在請求相機權限...";
+    <a-scene mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.0/examples/image-tracking/assets/card-example/card.mind; uiScanning: no;" 
+             vr-mode-ui="enabled: false" 
+             device-orientation-permission-ui="enabled: false">
+      
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-            // 使用最原始的方法呼叫相機
-            // facingMode: 'environment' 代表後置鏡頭
-            navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'environment' }, 
-                audio: false 
-            })
-            .then(function(stream) {
-                log.innerHTML = "權限成功！正在載入影像流...";
-                log.style.color = "#00ff00"; // 變綠色字
-                
-                // 將影像流放入 video 標籤
-                video.srcObject = stream;
-                video.play();
-                
-                // 檢查數據
-                video.onloadedmetadata = function() {
-                    log.innerHTML += "<br>影像尺寸: " + video.videoWidth + "x" + video.videoHeight;
-                };
-            })
-            .catch(function(err) {
-                log.innerHTML = "錯誤: " + err.name + "<br>" + err.message;
-                log.style.color = "red";
-            });
-        }
-    </script>
-</body>
+      <a-entity mindar-image-target="targetIndex: 0">
+        
+        <a-plane color="blue" opaciy="0.5" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+        
+        <a-box position="0 0 0.2" color="red" scale="0.1 0.1 0.1"
+               animation="property: rotation; to: 0 360 0; dur: 2000; loop: true">
+        </a-box>
+        
+      </a-entity>
+    </a-scene>
+  </body>
 </html>
