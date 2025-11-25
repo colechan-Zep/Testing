@@ -1,84 +1,80 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>WeChat Resolution Check</title>
-    
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Raw Camera Check</title>
     <style>
-      body { margin: 0; overflow: hidden; background: orange; } /* 背景設橙色，如果見到橙色即係CSS運作中 */
-      
-      /* 診斷文字：超大，置中 */
-      #info {
-        position: fixed; top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 24px; color: white; background: black;
-        padding: 20px; z-index: 99999; text-align: center;
-        border: 4px solid white;
-      }
-
-      /* 強制 Video 顯示 */
-      #arjs-video {
-        position: absolute !important;
-        top: 0; left: 0; width: 100% !important; height: 100% !important;
-        z-index: 1 !important; /* 放在中間 */
-        background: transparent !important;
-        display: block !important;
-      }
-
-      /* 強制 3D Canvas 半透明，讓我們看穿它！ */
-      canvas.a-canvas {
-        opacity: 0.3 !important; /* 透明度 30% */
-        z-index: 999 !important; /* 放在最頂 */
-        background: transparent !important;
-      }
+        body { 
+            background-color: #222; 
+            color: white; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+        }
+        /* 這是最原始的影片標籤，加了紅色框框 */
+        video { 
+            width: 90%; 
+            max-width: 400px; 
+            height: auto; 
+            border: 5px solid red; 
+            background-color: black; 
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            margin-bottom: 20px;
+            background-color: #07c160; /* 微信綠 */
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #log { margin-top: 10px; color: yellow; font-size: 14px; text-align: center; }
     </style>
-  </head>
-  
-  <body>
-    <div id="info">讀取數據中...</div>
+</head>
+<body>
 
-    <a-scene embedded 
-             arjs="sourceType: webcam; debugUIEnabled: false;"
-             vr-mode-ui="enabled: false"
-             renderer="alpha: true; logarithmicDepthBuffer: true;">
-      <a-marker preset="hiro">
-        <a-box position="0 0.5 0" material="color: red;"></a-box>
-      </a-marker>
-      <a-entity camera></a-entity>
-    </a-scene>
+    <button onclick="openCamera()">點擊開啟相機 (Raw)</button>
+
+    <video id="myVideo" playsinline webkit-playsinline muted autoplay></video>
+    
+    <div id="log">等待操作...</div>
 
     <script>
-      var infoBox = document.getElementById('info');
-      
-      setInterval(function() {
-        var video = document.getElementById('arjs-video');
-        if (video) {
-          var w = video.videoWidth;
-          var h = video.videoHeight;
-          var ready = video.readyState;
-          
-          // 顯示核心數據
-          infoBox.innerHTML = 
-            "解析度: " + w + " x " + h + "<br>" +
-            "狀態: " + ready + " (4=播放中)<br>" +
-            "綠燈: 應該已著";
+        function openCamera() {
+            var log = document.getElementById('log');
+            var video = document.getElementById('myVideo');
             
-          // 如果解析度係 0，嘗試強制重啟
-          if (w === 0 || h === 0) {
-             infoBox.style.color = "red"; // 紅字代表有問題
-             video.play();
-          } else {
-             infoBox.style.color = "#00ff00"; // 綠字代表正常
-             infoBox.innerHTML += "<br>相機運作正常！<br>如果你見唔到畫面<br>即係被遮住咗";
-          }
-        } else {
-          infoBox.innerHTML = "找不到相機元素";
+            log.innerHTML = "正在請求相機權限...";
+
+            // 使用最原始的方法呼叫相機
+            // facingMode: 'environment' 代表後置鏡頭
+            navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment' }, 
+                audio: false 
+            })
+            .then(function(stream) {
+                log.innerHTML = "權限成功！正在載入影像流...";
+                log.style.color = "#00ff00"; // 變綠色字
+                
+                // 將影像流放入 video 標籤
+                video.srcObject = stream;
+                video.play();
+                
+                // 檢查數據
+                video.onloadedmetadata = function() {
+                    log.innerHTML += "<br>影像尺寸: " + video.videoWidth + "x" + video.videoHeight;
+                };
+            })
+            .catch(function(err) {
+                log.innerHTML = "錯誤: " + err.name + "<br>" + err.message;
+                log.style.color = "red";
+            });
         }
-      }, 500);
     </script>
-  </body>
+</body>
 </html>
