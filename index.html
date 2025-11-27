@@ -2,47 +2,37 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AR Image Overlay</title>
+    <title>MindAR Final</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      /* 1. 核心：清除所有邊距，強制全屏 */
+      /* 這段 CSS 是來自之前「成功版」的設定 
+         強制背景透明/黑色，確保無白邊
+      */
       html, body {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
-        overflow: hidden; /* 禁止滑動，這很重要 */
-        background-color: black !important; /* 改成黑色，就算有邊都係黑邊，無咁覺眼 */
+        overflow: hidden;
+        background-color: black !important; /* 強制黑色底，就算有邊都係黑邊 */
       }
 
-      /* 2. 針對相機影片：強制放大填滿 */
+      /* 強制 Video 填滿 */
       video {
-        position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        min-width: 100% !important;
-        min-height: 100% !important;
-        width: auto !important;
-        height: auto !important;
-        transform: translate(-50%, -50%) !important; /* 居中放大 */
-        z-index: -100 !important;
-        object-fit: cover !important; /* 關鍵：這行指令會裁切多餘部分，確保填滿 */
-        display: block !important;
-      }
-
-      /* 3. 針對 3D 畫布：同樣強制填滿 */
-      canvas.a-canvas {
         position: absolute !important;
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        z-index: 1 !important;
+        z-index: -100 !important;
+        display: block !important;
+        object-fit: cover !important; /* 確保畫面拉伸填滿 */
+        background-color: black !important;
       }
 
-      /* 啟動按鈕樣式 (保持不變) */
+      /* 按鈕樣式 */
       #startButton {
         position: fixed;
         bottom: 50px;
@@ -55,6 +45,7 @@
         border-radius: 10px;
         z-index: 9999;
         display: block;
+        border: none;
       }
     </style>
   </head>
@@ -69,17 +60,17 @@
              device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <img id="my-image" src="./show.png" />
+        <img id="content-image" src="./show.png" />
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
         
-        <a-image src="#my-image" 
+        <a-image src="#content-image" 
                  position="0 0 0" 
                  height="1" width="1" 
-                 rotation="0 0 0"
+                 rotation="0 0 0" 
                  opacity="1"></a-image>
                  
       </a-entity>
@@ -92,13 +83,19 @@
       startButton.addEventListener('click', () => {
         startButton.innerText = "載入中...";
         const video = document.querySelector('video');
-        if (video) { video.play(); video.style.opacity = "1"; }
-        setTimeout(() => { startButton.style.display = 'none'; }, 1000);
+        if (video) {
+            video.play();
+            video.style.opacity = "1";
+        }
+        setTimeout(() => {
+            startButton.style.display = 'none';
+        }, 1000);
       });
 
+      // 確保背景是黑色 (修復白邊的關鍵)
       sceneEl.addEventListener("arReady", (event) => {
-        document.body.style.background = "transparent";
-        document.documentElement.style.background = "transparent";
+        document.body.style.background = "black";
+        document.documentElement.style.background = "black";
       });
       
       sceneEl.addEventListener("arError", (event) => {
