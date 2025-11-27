@@ -2,18 +2,17 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>3D Face Filter</title>
+    <title>Face AR Fixed</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-face-aframe.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-aframe.prod.js"></script>
     
     <style>
-      /* 1. 解決白邊 + 黑屏問題的標準設定 */
       html, body {
         margin: 0; padding: 0; width: 100%; height: 100%;
         overflow: hidden; background-color: black !important;
       }
       
-      /* 2. 強制影片填滿螢幕 */
+      /* 確保 Video 永遠在最底層且填滿 */
       video {
         position: absolute !important;
         top: 50% !important; left: 50% !important;
@@ -25,43 +24,41 @@
         display: block !important;
       }
 
-      /* 3. AR 內容層 */
       canvas.a-canvas, a-scene {
         position: absolute !important; top: 0 !important; left: 0 !important;
         width: 100% !important; height: 100% !important;
         z-index: 2 !important;
         background-color: transparent !important;
-        pointer-events: none !important; /* 讓點擊穿透 */
+        pointer-events: none !important;
       }
 
-      /* 4. 按鈕樣式 (確保 WeChat 點得到) */
       .control-btn {
         position: fixed; z-index: 99999 !important;
         border-radius: 30px; border: 2px solid white; color: white;
         font-size: 16px; font-weight: bold; padding: 12px 25px;
-        pointer-events: auto !important; /* 強制可點擊 */
+        pointer-events: auto !important;
         box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
         font-family: sans-serif;
       }
 
       #startButton {
         bottom: 50px; left: 50%; transform: translateX(-50%);
-        background: #d32f2f; /* 紅色 */
+        background: #d32f2f;
       }
 
       #switchButton {
         top: 30px; right: 20px;
-        background: #007AFF; /* 藍色 */
-        display: none; /* 一開始隱藏 */
+        background: #007AFF;
+        display: none; /* 初始隱藏 */
       }
     </style>
   </head>
   <body>
 
-    <button id="startButton" class="control-btn">啟動 Face AR</button>
-    <button id="switchButton" class="control-btn">🔄 轉鏡頭</button>
+    <button id="startButton" class="control-btn" onclick="startAR()">啟動 Face AR</button>
+    <button id="switchButton" class="control-btn" onclick="switchCamera()">🔄 轉鏡頭</button>
 
-    <a-scene mindar-face 
+    <a-scene mindar-face="filterMinCF:0.001; filterBeta: 0.01;" 
              embedded 
              color-space="sRGB" 
              renderer="colorManagement: true, physicallyCorrectLights, alpha: true" 
@@ -76,11 +73,8 @@
       <a-camera active="false" position="0 0 0"></a-camera>
 
       <a-entity mindar-face-target="anchorIndex: 168">
-        
         <a-gltf-model mindar-face-occluder position="0 -0.3 0.15" rotation="0 0 0" scale="0.065 0.065 0.065" src="#headModel"></a-gltf-model>
-        
         <a-gltf-model rotation="0 0 0" position="0 0 0" scale="0.01 0.01 0.01" src="#glassesModel"></a-gltf-model>
-        
       </a-entity>
     </a-scene>
 
@@ -89,38 +83,61 @@
       const switchBtn = document.getElementById('switchButton');
       const sceneEl = document.querySelector('a-scene');
 
-      // 1. 啟動 AR (WeChat 必須要用戶點擊才能開 Video)
-      startBtn.addEventListener('click', () => {
+      function startAR() {
         startBtn.innerText = "載入中...";
-        
-        // 啟動 MindAR 系統
-        // 這裡它會嘗試開啟前置鏡頭
+        // 啟動 MindAR
         sceneEl.systems['mindar-face-system'].start();
+      }
 
-        // 處理 UI
-        setTimeout(() => {
-            startBtn.style.display = 'none';   // 隱藏開始掣
-            switchBtn.style.display = 'block'; // 顯示轉鏡頭掣
-        }, 2000); // 延遲 2 秒顯示，等相機 Ready
-      });
-
-      // 2. 切換鏡頭功能
-      switchBtn.addEventListener('click', () => {
-        // 簡單直接的切換指令
-        sceneEl.systems['mindar-face-system'].switchCamera();
-      });
-
-      // 3. 修復黑屏問題 (當 AR 準備好時，將 Body 變透明)
+      // 監聽 AR 準備就緒 (第一次啟動)
       sceneEl.addEventListener("arReady", (event) => {
-        console.log("MindAR is ready");
+        console.log("MindAR Ready");
+        // 隱藏開始掣，顯示轉鏡頭掣
+        startBtn.style.display = 'none';
+        switchBtn.style.display = 'block';
+        
+        // 確保背景透明
         document.body.style.background = "transparent";
         document.documentElement.style.background = "transparent";
       });
+
+      // 轉鏡頭功能 (含暴力喚醒)
+      function switchCamera() {
+        const system = sceneEl.systems['mindar-face-system'];
+        
+        if (system) {
+            // 1. 執行切換
+            system.switchCamera();
+            
+            // 2. 暴力喚醒機制 (Watchdog)
+            // iOS 切換後可能會暫停影片，我們每 500ms 檢查一次，連續檢查 5 秒
+            let checkCount = 0;
+            const forcePlayInterval = setInterval(() => {
+                checkCount++;
+                const video = document.querySelector('video');
+                
+                if (video) {
+                    // 確保 CSS 樣式無跑位
+                    video.style.zIndex = "1";
+                    video.style.minWidth = "100vw";
+                    video.style.objectFit = "cover";
+                    
+                    // 如果影片暫停了，強制播放
+                    if (video.paused) {
+                        console.log("Force playing video...");
+                        video.play();
+                    }
+                }
+                
+                // 5秒後停止檢查
+                if (checkCount > 10) clearInterval(forcePlayInterval);
+            }, 500);
+        }
+      }
       
-      // 4. 錯誤偵測
       sceneEl.addEventListener("arError", (event) => {
         alert("AR 錯誤: " + event.detail.error);
-        startBtn.innerText = "重新載入";
+        startBtn.innerText = "重試";
       });
     </script>
   </body>
