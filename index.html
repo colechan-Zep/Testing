@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MindAR WeChat Fix</title>
+    <title>MindAR Fix Check</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
     
@@ -27,7 +27,7 @@
         height: 100% !important;
         z-index: -100 !important; /* 確保在最底 */
         display: block !important;
-        background-color: black !important; /* 如果無畫面，起碼係黑色唔係白色 */
+        background-color: black !important;
       }
 
       /* 3. 啟動按鈕 */
@@ -50,16 +50,16 @@
 
     <button id="startButton">點擊開始 AR</button>
 
-<a-scene mindar-image="imageTargetSrc: ./target.mind; uiScanning: yes; uiLoading: no;" 
-         color-space="sRGB" 
-         renderer="colorManagement: true, physicallyCorrectLights" 
-         vr-mode-ui="enabled: false" 
-         device-orientation-permission-ui="enabled: false">
+    <a-scene mindar-image="imageTargetSrc: ./target.mind; uiScanning: yes; uiLoading: no;" 
+             color-space="sRGB" 
+             renderer="colorManagement: true, physicallyCorrectLights" 
+             vr-mode-ui="enabled: false" 
+             device-orientation-permission-ui="enabled: false">
       
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane color="blue" opaciy="0.5" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+        <a-plane color="blue" opacity="0.5" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
         <a-box position="0 0 0.2" color="red" scale="0.1 0.1 0.1" animation="property: rotation; to: 0 360 0; dur: 2000; loop: true"></a-box>
       </a-entity>
     </a-scene>
@@ -68,14 +68,9 @@
       const startButton = document.getElementById('startButton');
       const sceneEl = document.querySelector('a-scene');
 
-      // 等待場景載入
-      sceneEl.addEventListener('loaded', () => {
-        console.log("Scene loaded");
-      });
-
       // 點擊按鈕後才正式啟動 AR
       startButton.addEventListener('click', () => {
-        startButton.innerText = "啟動中...";
+        startButton.innerText = "載入中...";
         
         // 1. 強制播放 video
         const video = document.querySelector('video');
@@ -92,14 +87,14 @@
 
       // 監聽 MindAR 準備就緒事件
       sceneEl.addEventListener("arReady", (event) => {
-        // 暴力除錯：當 AR Ready 時，將背景再次設為透明
         document.body.style.background = "transparent";
         document.documentElement.style.background = "transparent";
       });
       
-      // 監聽錯誤
+      // 監聽錯誤 (關鍵修正：直接彈窗話你知咩事)
       sceneEl.addEventListener("arError", (event) => {
-        startButton.innerText = "Error: " + event.detail.error;
+        alert("AR 出錯: " + event.detail.error); // 手機彈窗
+        startButton.innerText = "載入失敗";
         startButton.style.background = "black";
       });
     </script>
