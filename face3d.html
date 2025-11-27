@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>3D Face Filter</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-face-aframe.prod.js"></script>
+    
+    <style>
+      /* 1. 解決白邊 + 黑屏問題的標準設定 */
+      html, body {
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        overflow: hidden; background-color: black !important;
+      }
+      
+      /* 2. 強制影片填滿螢幕 */
+      video {
+        position: absolute !important;
+        top: 50% !important; left: 50% !important;
+        min-width: 100vw !important; min-height: 100vh !important;
+        width: auto !important; height: auto !important;
+        transform: translate(-50%, -50%) !important;
+        z-index: 1 !important;
+        object-fit: cover !important;
+        display: block !important;
+      }
+
+      /* 3. AR 內容層 */
+      canvas.a-canvas, a-scene {
+        position: absolute !important; top: 0 !important; left: 0 !important;
+        width: 100% !important; height: 100% !important;
+        z-index: 2 !important;
+        background-color: transparent !important;
+        pointer-events: none !important; /* 讓點擊穿透 */
+      }
+
+      /* 4. 按鈕樣式 (確保 WeChat 點得到) */
+      .control-btn {
+        position: fixed; z-index: 99999 !important;
+        border-radius: 30px; border: 2px solid white; color: white;
+        font-size: 16px; font-weight: bold; padding: 12px 25px;
+        pointer-events: auto !important; /* 強制可點擊 */
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
+        font-family: sans-serif;
+      }
+
+      #startButton {
+        bottom: 50px; left: 50%; transform: translateX(-50%);
+        background: #d32f2f; /* 紅色 */
+      }
+
+      #switchButton {
+        top: 30px; right: 20px;
+        background: #007AFF; /* 藍色 */
+        display: none; /* 一開始隱藏 */
+      }
+    </style>
+  </head>
+  <body>
+
+    <button id="startButton" class="control-btn">啟動 Face AR</button>
+    <button id="switchButton" class="control-btn">🔄 轉鏡頭</button>
+
+    <a-scene mindar-face 
+             embedded 
+             color-space="sRGB" 
+             renderer="colorManagement: true, physicallyCorrectLights, alpha: true" 
+             vr-mode-ui="enabled: false" 
+             device-orientation-permission-ui="enabled: false">
+      
+      <a-assets>
+        <a-asset-item id="glassesModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.0/examples/face-tracking/assets/glasses/scene.gltf"></a-asset-item>
+        <a-asset-item id="headModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.0/examples/face-tracking/assets/sparkar/headOccluder.glb"></a-asset-item>
+      </a-assets>
+
+      <a-camera active="false" position="0 0 0"></a-camera>
+
+      <a-entity mindar-face-target="anchorIndex: 168">
+        
+        <a-gltf-model mindar-face-occluder position="0 -0.3 0.15" rotation="0 0 0" scale="0.065 0.065 0.065" src="#headModel"></a-gltf-model>
+        
+        <a-gltf-model rotation="0 0 0" position="0 0 0" scale="0.01 0.01 0.01" src="#glassesModel"></a-gltf-model>
+        
+      </a-entity>
+    </a-scene>
+
+    <script>
+      const startBtn = document.getElementById('startButton');
+      const switchBtn = document.getElementById('switchButton');
+      const sceneEl = document.querySelector('a-scene');
+
+      // 1. 啟動 AR (WeChat 必須要用戶點擊才能開 Video)
+      startBtn.addEventListener('click', () => {
+        startBtn.innerText = "載入中...";
+        
+        // 啟動 MindAR 系統
+        // 這裡它會嘗試開啟前置鏡頭
+        sceneEl.systems['mindar-face-system'].start();
+
+        // 處理 UI
+        setTimeout(() => {
+            startBtn.style.display = 'none';   // 隱藏開始掣
+            switchBtn.style.display = 'block'; // 顯示轉鏡頭掣
+        }, 2000); // 延遲 2 秒顯示，等相機 Ready
+      });
+
+      // 2. 切換鏡頭功能
+      switchBtn.addEventListener('click', () => {
+        // 簡單直接的切換指令
+        sceneEl.systems['mindar-face-system'].switchCamera();
+      });
+
+      // 3. 修復黑屏問題 (當 AR 準備好時，將 Body 變透明)
+      sceneEl.addEventListener("arReady", (event) => {
+        console.log("MindAR is ready");
+        document.body.style.background = "transparent";
+        document.documentElement.style.background = "transparent";
+      });
+      
+      // 4. 錯誤偵測
+      sceneEl.addEventListener("arError", (event) => {
+        alert("AR 錯誤: " + event.detail.error);
+        startBtn.innerText = "重新載入";
+      });
+    </script>
+  </body>
+</html>
