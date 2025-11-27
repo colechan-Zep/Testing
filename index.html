@@ -7,103 +7,60 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      /* 1. 解決白邊的核心：將網頁底色設為「全黑」 */
-      /* 就算相機畫面有一點點覆蓋不到，都會變成黑邊，看起來像電影模式 */
+      /* 1. 網頁本身保持透明，不要遮住任何東西 */
       html, body {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background-color: black !important; 
+        background-color: transparent !important; 
       }
 
-      /* 2. 強制相機畫面盡量填滿 */
+      /* 2. 加入一個獨立的「黑色底板」，放在最最最底 (-999)
+         作用：如果相機有空隙，就顯示黑色，唔好顯示白色 */
+      #black-background {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: black;
+        z-index: -999; /* 放在地核深處 */
+      }
+
+      /* 3. 相機影片：放在黑色底板上面 (-2) */
       video {
         position: absolute !important;
         top: 50% !important;
         left: 50% !important;
-        min-width: 100vw !important;
+        /* 強制拉伸，確保填滿螢幕 */
+        min-width: 100vw !important; 
         min-height: 100vh !important;
         width: auto !important;
         height: auto !important;
         transform: translate(-50%, -50%) !important;
-        z-index: -100 !important;
+        z-index: -2 !important; /* 比黑色底板高，比 3D 內容低 */
         object-fit: cover !important;
+        display: block !important;
       }
 
-      /* 3. 按鈕樣式 */
+      /* 4. 按鈕樣式 */
       #startButton {
         position: fixed;
         bottom: 50px;
         left: 50%;
         transform: translateX(-50%);
         padding: 15px 30px;
-        background: #d32f2f; /* 改了深紅色，稍微專業點 */
+        background: #d32f2f;
         color: white;
         font-size: 18px;
         font-weight: bold;
         border-radius: 25px;
         z-index: 9999;
         border: none;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
       }
     </style>
   </head>
   <body>
 
+    <div id="black-background"></div>
+
     <button id="startButton">點擊開始 AR</button>
-
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind; uiScanning: yes; uiLoading: no;" 
-             color-space="sRGB" 
-             renderer="colorManagement: true, physicallyCorrectLights" 
-             vr-mode-ui="enabled: false" 
-             device-orientation-permission-ui="enabled: false">
-      
-      <a-assets>
-        <img id="content-image" src="./show.png" />
-      </a-assets>
-
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-      <a-entity mindar-image-target="targetIndex: 0">
-        
-        <a-image src="#content-image" 
-                 position="0 0 0" 
-                 height="1" width="1" 
-                 rotation="0 0 0" 
-                 opacity="1"></a-image>
-                 
-      </a-entity>
-    </a-scene>
-
-    <script>
-      const startButton = document.getElementById('startButton');
-      const sceneEl = document.querySelector('a-scene');
-
-      startButton.addEventListener('click', () => {
-        startButton.innerText = "載入中...";
-        const video = document.querySelector('video');
-        
-        if (video) {
-            video.play();
-            video.style.opacity = "1";
-        }
-
-        setTimeout(() => {
-            startButton.style.display = 'none';
-        }, 1000);
-      });
-
-      // 雙重保險：當 AR 準備好時，確保背景是黑色
-      sceneEl.addEventListener("arReady", (event) => {
-        document.body.style.backgroundColor = "black";
-      });
-      
-      sceneEl.addEventListener("arError", (event) => {
-        alert("錯誤 (請檢查檔案名): " + event.detail.error);
-        startButton.innerText = "載入失敗";
-      });
-    </script>
-  </body>
-</html>
